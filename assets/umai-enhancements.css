@@ -15,3 +15,12 @@ html[data-low-motion=true] #umai-story,html[data-low-motion=true] .washi-hero-ph
 @media(prefers-reduced-motion:reduce){#umai-story,.story-element,.simple-recipe{transition:none!important;transform:none!important}}
 @media(max-width:1100px){.washi-utility{font-size:11px!important;padding:8px!important}.washi-actions{gap:4px!important}}
 @media(max-width:660px){.washi-utility{font-size:0!important;min-width:30px}.washi-utility.install-app{font-size:0!important}.washi-utility.install-app:before{content:'↧';font-size:17px}.washi-actions .washi-utility:nth-child(2):before{content:'◌';font-size:18px}.washi-actions .washi-utility:nth-child(3):before{content:'↥';font-size:18px}.washi-ai{display:none}.washi-actions{gap:3px!important}.washi-hero{overflow:hidden}#umai-story{opacity:.65}.story-authors{width:110px;top:760px}.story-flower{right:0;top:590px}}
+
+/* Layered depth: paper, citrus and author memory drift at distinct speeds. */
+#umai-story{perspective:950px;transform-style:preserve-3d}
+.story-flower{transform:translate3d(var(--near-x,0px),var(--near-y,0px),45px) rotate(-8deg)}
+.story-lime{transform:translate3d(var(--far-x,0px),var(--far-y,0px),-25px)}
+.story-plate{transform:translate3d(var(--x,0px),var(--y,0px),20px)}
+.story-authors{transform:translate3d(var(--far-x,0px),var(--far-y,0px),-45px);transition:transform .15s ease-out}
+html[data-low-motion=true] .story-element,html[data-low-motion=true] .story-authors{transform:none!important}
+@media(prefers-reduced-motion:reduce){.story-element,.story-authors{transform:none!important}}
