@@ -33,3 +33,14 @@ html[data-low-motion=true] .story-element,html[data-low-motion=true] .story-auth
  .umai-refresh span{display:none}
  .washi-actions{flex-wrap:wrap;gap:6px}
 }
+
+.umai-cloud-trigger{white-space:nowrap}
+#umai-cloud-panel{position:fixed;z-index:9999;right:16px;top:76px;width:min(370px,calc(100vw - 32px));max-height:calc(100dvh - 95px);overflow:auto;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--bg);color:var(--ink);box-shadow:0 15px 55px #0003}
+#umai-cloud-panel[hidden]{display:none}
+.umai-cloud-head{display:flex;justify-content:space-between;align-items:center;font-size:17px}
+.umai-cloud-head button{border:0;background:none;color:inherit;font-size:26px}
+#umai-cloud-panel p,#umai-cloud-panel small{color:var(--muted);line-height:1.5}
+#umai-cloud-panel form{display:flex;flex-direction:column;gap:9px}
+#umai-cloud-panel input{padding:12px;border:1px solid var(--line);border-radius:10px;min-width:0;background:transparent;color:inherit}
+#umai-cloud-panel form button,#umai-cloud-signed button{background:#ae351d;color:#fff;border:0;border-radius:24px;padding:11px 14px;margin:5px 4px 8px 0}
+@media(max-width:700px){.umai-cloud-trigger{font-size:12px!important;padding:8px!important}#umai-cloud-panel{top:64px;right:10px}}
