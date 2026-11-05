@@ -1,0 +1,24 @@
+{
+  "id": "/umai/",
+  "name": "umai. – Viet & Toni's Rezepte",
+  "short_name": "umai.",
+  "description": "Unser privates Rezeptbuch für Kochen, Backen und Getränke.",
+  "lang": "de",
+  "start_url": "/umai/",
+  "scope": "/umai/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#fbf7f0",
+  "theme_color": "#fbf7f0",
+  "icons": [
+    {
+      "src": "assets/icon-512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
