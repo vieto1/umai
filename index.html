@@ -432,8 +432,8 @@ function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='dark
    const copy=recipes.filter(r=>r.id!==id);
    copy.unshift({id,image:data,title:form.elements.title.value,description:form.elements.description.value,category:form.elements.category.value,time:Number(form.elements.time.value),ingredients:form.elements.ingredients.value.split('\\n'),steps:form.elements.steps.value.split('\\n')});
    const serialized=JSON.stringify(copy);
-   const probe='umai-photo-storage-check';
-   localStorage.setItem(probe,serialized);localStorage.removeItem(probe);
+   const previous=localStorage.getItem('umai-recipes')||'';
+   if(serialized.length>3500000 || serialized.length-previous.length>1200000)throw Error('Speicherlimit erreicht');
   }catch(err){e.preventDefault();e.stopImmediatePropagation();status.textContent='Nicht genug Speicherplatz auf diesem Gerät. Bitte ein kleineres Foto wählen oder ältere Bilder entfernen.'}
  },true);
 })();
