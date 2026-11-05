@@ -6,13 +6,30 @@ let favorites=new Set(store('umai-favorites',[]));
 const notify=(message)=>{let n=document.getElementById('umai-toast');if(!n){n=document.createElement('div');n.id='umai-toast';n.setAttribute('role','status');document.body.appendChild(n)}n.textContent=message;n.classList.add('shown');clearTimeout(notify.timer);notify.timer=setTimeout(()=>n.classList.remove('shown'),3300)};
 const getMotion=()=>localStorage.getItem('umai-reduce-motion')==='true'||matchMedia('(prefers-reduced-motion: reduce)').matches;
 const motionBtn=document.createElement('button');motionBtn.className='ghost washi-utility';motionBtn.type='button';motionBtn.title='Animationen ein- oder ausschalten';motionBtn.textContent='◌ Bewegung';motionBtn.addEventListener('click',()=>{localStorage.setItem('umai-reduce-motion',String(!getMotion()));syncMotion();notify(getMotion()?'Animationen reduziert':'Sanfte Animationen aktiviert')});
+// Compact manual refresh, positioned in the existing toolbar (no floating overlay).
+const refreshBtn=document.createElement('button');
+refreshBtn.type='button';refreshBtn.className='ghost washi-utility umai-refresh';
+refreshBtn.innerHTML='↻ <span>Aktualisieren</span>';refreshBtn.title='Neue UMAI-Version und Rezeptansicht laden';
+refreshBtn.setAttribute('aria-label','UMAI aktualisieren');
+refreshBtn.addEventListener('click',async()=>{
+ refreshBtn.disabled=true;refreshBtn.textContent='↻ Prüfe …';
+ try{
+  if('serviceWorker' in navigator){
+   const reg=await navigator.serviceWorker.getRegistration('./');
+   if(reg){await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}
+  }
+  if(!navigator.onLine){notify('Offline: die gespeicherte Version wird angezeigt');refreshBtn.disabled=false;refreshBtn.innerHTML='↻ <span>Aktualisieren</span>';return}
+  const url=new URL(location.href);url.searchParams.set('umai_refresh',String(Date.now()));location.replace(url.href);
+ }catch(e){refreshBtn.disabled=false;refreshBtn.innerHTML='↻ <span>Aktualisieren</span>';notify('Aktualisierung fehlgeschlagen. Bitte Verbindung prüfen.')}
+});
+window.addEventListener('storage',e=>{if(!e.key||['umai-recipes','umai-hero-preferences-v1','umai-favorites','umai-theme'].includes(e.key)){notify('Änderungen in einem anderen Tab erkannt');if(e.key==='umai-recipes'){try{const updated=JSON.parse(localStorage.getItem('umai-recipes')||'null');if(Array.isArray(updated)){recipes=updated;render()}}catch{}}if(e.key==='umai-hero-preferences-v1'){try{const saved=JSON.parse(localStorage.getItem(e.key)||'null');if(saved){umaiHeroState=saved;applyHeroSettings()}}catch{}}}});
 const dataBtn=document.createElement('button');dataBtn.type='button';dataBtn.className='ghost washi-utility';dataBtn.textContent='↥ Sicherung';dataBtn.title='Rezepte sichern oder importieren';
 const importInput=document.createElement('input');importInput.type='file';importInput.accept='.json,application/json';importInput.hidden=true;document.body.appendChild(importInput);
 function saveBackup(){const blob=new Blob([JSON.stringify({format:'umai-recipes',version:1,exportedAt:new Date().toISOString(),recipes,favorites:[...favorites]},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='umai-rezepte-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);notify('Rezeptdatei gesichert')}
 function showDataActions(){let box=document.getElementById('dataActions');if(!box){box=document.createElement('div');box.id='dataActions';box.className='washi-data-actions';box.innerHTML='<p><strong>Deine Rezepte bleiben auf diesem Gerät.</strong> Für ein anderes Gerät bitte als JSON sichern und dort importieren.</p>';const exportBtn=document.createElement('button');exportBtn.textContent='Rezepte exportieren';exportBtn.addEventListener('click',saveBackup);const importBtn=document.createElement('button');importBtn.textContent='Rezepte importieren';importBtn.addEventListener('click',()=>importInput.click());box.append(exportBtn,importBtn);box.hidden=true;document.querySelector('.washi-collection').prepend(box)}box.hidden=!box.hidden}
 dataBtn.addEventListener('click',showDataActions);
 importInput.addEventListener('change',async()=>{const file=importInput.files?.[0];if(!file)return;try{if(file.size>5*1024*1024)throw Error('Datei ist zu groß (maximal 5 MB)');const data=JSON.parse(await file.text());const incoming=Array.isArray(data)?data:data.recipes;if(!Array.isArray(incoming)||incoming.length>1000||!incoming.every(r=>r&&typeof r.id==='string'&&typeof r.title==='string'&&Array.isArray(r.ingredients)&&Array.isArray(r.steps)))throw Error('Ungültiges UMAI-Rezeptformat');if(!confirm('Die importierten Rezepte mit deinen vorhandenen Rezepten zusammenführen? Gleichnamige IDs werden durch die importierte Version ersetzt.'))return;const byId=new Map(recipes.map(r=>[r.id,r]));incoming.forEach(r=>byId.set(r.id,r));recipes=[...byId.values()];persist();if(Array.isArray(data.favorites)){favorites=new Set(data.favorites);localStorage.setItem('umai-favorites',JSON.stringify([...favorites]))}render();notify(incoming.length+' Rezepte importiert')}catch(err){notify('Import nicht möglich: '+err.message)}finally{importInput.value=''}});
-const actions=document.querySelector('.washi-actions');if(actions){actions.prepend(dataBtn);actions.prepend(motionBtn)}
+const actions=document.querySelector('.washi-actions');if(actions){actions.prepend(dataBtn);actions.prepend(motionBtn);actions.prepend(refreshBtn)}
 const nav=document.querySelector('.washi-nav');if(nav){const a=document.createElement('a');a.href='#collection';a.textContent='♡ Favoriten';a.onclick=()=>selectSection('Favoriten');nav.appendChild(a)}
 const categories=document.querySelector('.simple-categories');if(categories){const b=document.createElement('button');b.className='simple-category';b.dataset.section='Favoriten';b.textContent='♡ Favoriten';b.onclick=()=>selectSection('Favoriten');categories.appendChild(b)}
 const oldRender=render;
