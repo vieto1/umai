@@ -38,7 +38,26 @@ let installPrompt=null;const installBtn=document.createElement('button');install
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;installBtn.hidden=false});
 window.addEventListener('appinstalled',()=>{installBtn.hidden=true;notify('UMAI wurde installiert')});
 window.addEventListener('online',()=>updateNetwork());window.addEventListener('offline',()=>updateNetwork());const network=document.createElement('div');network.id='umai-network';network.setAttribute('role','status');document.body.appendChild(network);function updateNetwork(){network.hidden=navigator.onLine;network.textContent='Offline – gespeicherte Rezepte bleiben verfügbar'}updateNetwork();
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(reg=>{if(reg.waiting)notify('UMAI-Update verfügbar. Seite neu laden.');reg.addEventListener('updatefound',()=>{const nw=reg.installing;nw?.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)notify('Neue UMAI-Version verfügbar – Seite neu laden')})})}).catch(()=>notify('Offline-Installation ist auf diesem Gerät nicht verfügbar')))}
+if('serviceWorker' in navigator){
+ let reloading=false;
+ const safeToReload=()=>!document.querySelector('dialog[open]')&&!document.querySelector('input:focus,textarea:focus,[contenteditable="true"]:focus');
+ const reloadForUpdate=()=>{if(reloading)return;if(!safeToReload()){notify('UMAI wurde aktualisiert. Bitte das geöffnete Rezept schließen, um die neue Version zu laden.');return}reloading=true;location.reload()};
+ navigator.serviceWorker.addEventListener('controllerchange',reloadForUpdate);
+ window.addEventListener('load',async()=>{
+  try{
+   const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+   const check=()=>{if(navigator.onLine)reg.update().catch(()=>{})};
+   check();
+   document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
+   window.addEventListener('pageshow',check);
+   window.addEventListener('online',check);
+   setInterval(()=>{if(!document.hidden)check()},60000);
+   if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+   reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller){notify('Neue UMAI-Version wird geladen …');if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}})});
+  }catch(e){notify('Automatische Updates sind auf diesem Gerät momentan nicht verfügbar')}
+ });
+}
+
 document.querySelectorAll('button').forEach(b=>b.addEventListener('pointerdown',()=>{if(navigator.vibrate&&!getMotion())navigator.vibrate(6)},{passive:true}));
 render();schedule();
 })();
