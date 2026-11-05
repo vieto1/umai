@@ -24,3 +24,12 @@ html[data-low-motion=true] #umai-story,html[data-low-motion=true] .washi-hero-ph
 .story-authors{transform:translate3d(var(--far-x,0px),var(--far-y,0px),-45px);transition:transform .15s ease-out}
 html[data-low-motion=true] .story-element,html[data-low-motion=true] .story-authors{transform:none!important}
 @media(prefers-reduced-motion:reduce){.story-element,.story-authors{transform:none!important}}
+
+/* Refresh control lives in the header, never as a floating obstruction. */
+.umai-refresh{display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.umai-refresh:disabled{opacity:.55;cursor:wait}
+@media(max-width:700px){
+ .umai-refresh{min-width:40px;min-height:40px;padding:8px 10px;font-size:18px}
+ .umai-refresh span{display:none}
+ .washi-actions{flex-wrap:wrap;gap:6px}
+}
