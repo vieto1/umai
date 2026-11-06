@@ -31,7 +31,7 @@ async function normalizeIncoming(r){const copy={...r};if(isCloudImage(copy.image
 async function loadRemote(){if(!user||loading)return;loading=true;try{
  const {data,error}=await client.from('umai_recipes').select('id,content,updated_at').eq('owner_id',user.id);
  if(error)throw error;
- const local=JSON.parse(localStorage.getItem('umai-recipes')||'[]');
+ const local=JSON.parse(localStorage.getItem('umai-recipes')||'[]');if(typeof umaiBanhMiBread!=='undefined'&&!local.some(r=>r.id===umaiBanhMiBread.id))local.push(umaiBanhMiBread);
  if(!data.length){showStatus('Erste Synchronisierung: lokale Rezepte werden hochgeladen …');await uploadRecipes(local);return}
  const remote=await Promise.all(data.map(x=>normalizeIncoming(x.content)));const missing=local.filter(r=>!remote.some(c=>c.id===r.id));if(missing.length){await uploadRecipes(missing);remote.push(...missing)}
  // Cloud is canonical once populated; starter recipes absent remotely are not silently restored.
