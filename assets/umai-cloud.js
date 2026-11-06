@@ -12,7 +12,7 @@ const showStatus=s=>{status.textContent=s};
 open.addEventListener('click',()=>{box.hidden=!box.hidden});
 document.getElementById('umai-cloud-close').onclick=()=>box.hidden=true;
 const updateAuth=()=>{login.hidden=!!user;signed.hidden=!user;open.textContent=user?'☁ Verbunden':'☁ Cloud';showStatus(user?'Verbunden: '+(user.email||'Konto'):'Nicht angemeldet – lokale Rezepte bleiben erhalten.')};
-login.addEventListener('submit',async e=>{e.preventDefault();const email=document.getElementById('umai-cloud-email').value.trim();showStatus('Anmeldelink wird gesendet …');const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:'https://vieto1.github.io/umai/'}});showStatus(error?'Anmeldung fehlgeschlagen: '+error.message:'Prüfe dein E-Mail-Postfach. Öffne den Link möglichst auf diesem Gerät.')});
+login.addEventListener('submit',async e=>{e.preventDefault();const email=document.getElementById('umai-cloud-email').value.trim();showStatus('Anmeldelink wird gesendet …');const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:'https://vieto1.github.io/umai/'}});showStatus(error?(/security purposes|rate limit/i.test(error.message)?'Zu viele Anfragen: Bitte mindestens 60 Sekunden warten und vorhandene E-Mails prüfen.':'Anmeldung fehlgeschlagen: '+error.message):'Prüfe dein E-Mail-Postfach und den Spam-Ordner. Bitte nicht mehrfach klicken.')});
 function isCloudImage(value){return typeof value==='string'&&value.startsWith('umai-storage:')}
 async function signedImage(path){const {data,error}=await client.storage.from('umai-images').createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
 async function uploadDataImage(dataUrl,folder){if(!dataUrl?.startsWith('data:image/'))return dataUrl;const blob=await(await fetch(dataUrl)).blob();if(blob.size>5*1024*1024)throw Error('Bild über 5 MB');const ext=blob.type==='image/webp'?'webp':'jpg';const path=user.id+'/'+folder+'/'+crypto.randomUUID()+'.'+ext;const {error}=await client.storage.from('umai-images').upload(path,blob,{contentType:blob.type,upsert:false});if(error)throw error;return 'umai-storage:'+path}
@@ -22,7 +22,7 @@ async function loadRemote(){if(!user||loading)return;loading=true;try{
  if(error)throw error;
  const local=JSON.parse(localStorage.getItem('umai-recipes')||'[]');
  if(!data.length){showStatus('Erste Synchronisierung: lokale Rezepte werden hochgeladen …');await uploadRecipes(local);return}
- const remote=await Promise.all(data.map(x=>normalizeIncoming(x.content)));
+ const remote=await Promise.all(data.map(x=>normalizeIncoming(x.content)));const missing=local.filter(r=>!remote.some(c=>c.id===r.id));if(missing.length){await uploadRecipes(missing);remote.push(...missing)}
  // Cloud is canonical once populated; starter recipes absent remotely are not silently restored.
  applying=true;recipes=remote;localStorage.setItem('umai-recipes',JSON.stringify(remote));render();applying=false;
  const pref=await client.from('umai_preferences').select('content').eq('owner_id',user.id).maybeSingle();
