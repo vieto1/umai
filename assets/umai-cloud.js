@@ -4,15 +4,26 @@ const client=createClient('https://carwwhojzwhxhygzcevf.supabase.co','sb_publish
 let user=null,loading=false,applying=false,saveTimer=null,cloudReady=false;
 const box=document.createElement('div');
 box.id='umai-cloud-panel';
-box.innerHTML='<div class="umai-cloud-head"><strong>☁ UMAI Cloud</strong><button type="button" id="umai-cloud-close" aria-label="Schließen">×</button></div><p id="umai-cloud-status">Verbindung wird geprüft …</p><form id="umai-cloud-login"><label for="umai-cloud-email">E-Mail-Adresse</label><input id="umai-cloud-email" type="email" autocomplete="email" placeholder="deine@email.de" required><button type="submit">Anmeldelink senden</button></form><div id="umai-cloud-signed" hidden><button type="button" id="umai-cloud-sync">Jetzt synchronisieren</button><button type="button" id="umai-cloud-logout">Abmelden</button></div><small>Private Rezepte und Bilder werden nur nach Anmeldung synchronisiert. Melde dich auf jedem Gerät mit derselben E-Mail-Adresse an.</small>';
+box.innerHTML='<div class="umai-cloud-head"><strong>☁ UMAI Cloud</strong><button type="button" id="umai-cloud-close" aria-label="Schließen">×</button></div><p id="umai-cloud-status">Verbindung wird geprüft …</p><form id="umai-cloud-login"><label for="umai-cloud-email">E-Mail-Adresse</label><input id="umai-cloud-email" type="email" autocomplete="email" placeholder="deine@email.de" required><label for="umai-cloud-password">Passwort</label><input id="umai-cloud-password" type="password" autocomplete="current-password" minlength="8" required placeholder="Mindestens 8 Zeichen"><button type="submit">Mit Passwort anmelden</button></form><div id="umai-cloud-signed" hidden><button type="button" id="umai-cloud-sync">Jetzt synchronisieren</button><button type="button" id="umai-cloud-logout">Abmelden</button></div><small>Private Rezepte und Bilder werden nur nach Anmeldung synchronisiert. Melde dich auf jedem Gerät mit deinem UMAI-Konto an. Die Konten müssen zunächst eingerichtet werden.</small>';
 box.hidden=true;document.body.appendChild(box);
 const open=document.createElement('button');open.className='ghost umai-cloud-trigger';open.type='button';open.textContent='☁ Cloud';open.title='UMAI Cloud-Synchronisierung';document.querySelector('.washi-actions')?.prepend(open);
 const status=document.getElementById('umai-cloud-status'),login=document.getElementById('umai-cloud-login'),signed=document.getElementById('umai-cloud-signed');
 const showStatus=s=>{status.textContent=s};
 open.addEventListener('click',()=>{box.hidden=!box.hidden});
 document.getElementById('umai-cloud-close').onclick=()=>box.hidden=true;
-const updateAuth=()=>{login.hidden=!!user;signed.hidden=!user;open.textContent=user?'☁ Verbunden':'☁ Cloud';showStatus(user?'Verbunden: '+(user.email||'Konto'):'Nicht angemeldet – lokale Rezepte bleiben erhalten.')};
-login.addEventListener('submit',async e=>{e.preventDefault();const email=document.getElementById('umai-cloud-email').value.trim();showStatus('Anmeldelink wird gesendet …');const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:'https://vieto1.github.io/umai/'}});showStatus(error?(/security purposes|rate limit/i.test(error.message)?'Zu viele Anfragen: Bitte mindestens 60 Sekunden warten und vorhandene E-Mails prüfen.':'Anmeldung fehlgeschlagen: '+error.message):'Prüfe dein E-Mail-Postfach und den Spam-Ordner. Bitte nicht mehrfach klicken.')});
+const updateAuth=()=>{login.hidden=!!user;signed.hidden=!user;open.textContent=user?'☁ Verbunden':'☁ Cloud';showStatus(user?'Verbunden: '+(user.email||'Konto'):'Nicht angemeldet – lokale Rezepte bleiben erhalten. Für den ersten Zugang muss ein UMAI-Konto eingerichtet werden.')};
+login.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const button=login.querySelector('button[type="submit"]');
+ const email=document.getElementById('umai-cloud-email').value.trim();
+ const password=document.getElementById('umai-cloud-password').value;
+ button.disabled=true;showStatus('Anmeldung wird geprüft …');
+ try{const {error}=await client.auth.signInWithPassword({email,password});
+ if(error)showStatus('Anmeldung fehlgeschlagen: '+(error.message==='Invalid login credentials'?'E-Mail oder Passwort stimmt nicht oder das Konto ist noch nicht eingerichtet.':error.message));
+ else showStatus('Erfolgreich angemeldet. Synchronisierung startet …');
+ }catch(err){showStatus('Verbindungsfehler: '+err.message)}
+ finally{button.disabled=false;document.getElementById('umai-cloud-password').value=''}
+});
 function isCloudImage(value){return typeof value==='string'&&value.startsWith('umai-storage:')}
 async function signedImage(path){const {data,error}=await client.storage.from('umai-images').createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
 async function uploadDataImage(dataUrl,folder){if(!dataUrl?.startsWith('data:image/'))return dataUrl;const blob=await(await fetch(dataUrl)).blob();if(blob.size>5*1024*1024)throw Error('Bild über 5 MB');const ext=blob.type==='image/webp'?'webp':'jpg';const path=user.id+'/'+folder+'/'+crypto.randomUUID()+'.'+ext;const {error}=await client.storage.from('umai-images').upload(path,blob,{contentType:blob.type,upsert:false});if(error)throw error;return 'umai-storage:'+path}
